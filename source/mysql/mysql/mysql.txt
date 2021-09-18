@@ -1,0 +1,81 @@
+centos安装mysql
+下载mysql源安装包
+wget http://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
+yum -y install mysql57-community-release-el7-11.noarch.rpm
+查看效果
+yum repolist enabled | grep mysql.*
+
+安装服务器
+yum install mysql-community-server
+
+先启动
+systemctl start mysqld
+
+查看初始密码
+grep "password" /var/log/mysqld.log
+
+修改密码 
+mysql> ALTER USER 'root'@'localhost' IDENTIFIED BY 'MyNewPass4!';
+或者
+mysql> set password for 'root'@'localhost'=password('MyNewPass4!');
+
+查看密码策略
+mysql> show variables like '%password%';
+修改密码策略
+在/etc/my.cnf文件添加validate_password_policy配置，指定密码策略
+# 选择0（LOW），1（MEDIUM），2（STRONG）其中一种，选择2需要提供密码字典文件validate_password_policy=0
+如果不需要密码策略，添加my.cnf文件中添加如下配置禁用即可：
+validate_password = off
+重新启动mysql服务使配置生效：
+systemctl restart mysqld
+配置默认编码为utf8
+修改/etc/my.cnf配置文件，在[mysqld]下添加编码配置，如下所示：
+[mysqld]
+character_set_server=utf8
+init_connect='SET NAMES utf8'
+
+修改字符集的方法，就是使用mysql的命令
+mysql> SET character_set_client = utf8 ;
+mysql> SET character_set_connection = utf8 ;
+ 
+使用 mysql> SHOW VARIABLES LIKE 'character%';查看，发现数据库编码均已改成utf8
+
+
+设置自启
+systemctl enable mysqld
+systemctl daemon-reload
+
+默认配置文件路径：  配置文件：/etc/my.cnf  日志文件：/var/log//var/log/mysqld.log  服务启动脚本：/usr/lib/systemd/system/mysqld.service  socket文件：/var/run/mysqld/mysqld.pid
+
+https://www.cnblogs.com/programmer-tlh/p/5782418.html
+服务器操作数据库
+
+启动|关闭。。。
+systemctl status|start|stop mysqld
+service mysqld status|start|stop
+
+链接数据库
+mysql -u<username> -p<userpassword>
+
+修改配置后重载
+flush privileges
+
+
+
+https://blog.csdn.net/iehadoop/article/details/82961264 删除数据库
+avicat连接MySQL8.0.11提示2059错误
+错误原因：mysql加密规则的改变；
+　　　　　mysql加密规则：mysql_native_password      mysql8之前的版本
+　　　　　　　　　　　　  caching_sha2_password     mysql8
+解决方法：
+	1. 
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'password' PASSWORD EXPIRE NEVER; // 修改加密规则
+	2. 
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';  // 更新一下用户的密码  
+	3. 
+grant all privileges on *.* to root@'localhost' identified by '密码'; // 执行授权命令   
+	4. 
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY 'root' WITH GRANT OPTION;  //允许远程访问
+	5. 
+FLUSH PRIVILEGES;//刷新权限
+
